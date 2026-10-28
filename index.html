@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zillion POS & Camera Scanner</title>
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --success: #16a34a;
+            --success-hover: #15803d;
+            --danger: #dc2626;
+            --background: #f8fafc;
+            --surface: #ffffff;
+            --text: #0f172a;
+            --text-secondary: #64748b;
+            --border: #e2e8f0;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        body {
+            background-color: var(--background);
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        header {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 12px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        h1 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 8px;
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: none;
+            padding: 8px 16px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        .tab-btn.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        main {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .view-section {
+            flex: 1;
+            display: none;
+            padding: 24px;
+            overflow-y: auto;
+        }
+
+        .view-section.active {
+            display: flex;
+            gap: 24px;
+        }
+
+        /* POS View Layout */
+        .pos-left {
+            flex: 2;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .pos-right {
+            flex: 1;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05);
+        }
+
+        .search-box {
+            display: flex;
+            gap: 8px;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 0.95rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input:focus, select:focus {
+            border-color: var(--primary);
+        }
+
+        .btn {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-hover); }
+        .btn-success { background: var(--success); color: white; width: 100%; }
+        .btn-success:hover { background: var(--success-hover); }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-secondary { background: var(--border); color: var(--text); }
+
+        .catalog-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 12px;
+            overflow-y: auto;
+            max-height: calc(100vh - 200px);
+            padding-right: 4px;
+        }
+
+        .catalog-item {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px;
+            cursor: pointer;
+            text-align: left;
+            transition: transform 0.1s, border-color 0.2s;
+        }
+
+        .catalog-item:hover {
+            border-color: var(--primary);
+            transform: translateY(-2px);
+        }
+
+        .catalog-item h4 {
+            font-size: 0.9rem;
+            margin-bottom: 4px;
+            color: var(--text);
+        }
+
+        .catalog-item p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+
+        .cart-items {
+            flex: 1;
+            overflow-y: auto;
+            margin-bottom: 16px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 8px;
+        }
+
+        .cart-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .cart-item-details span {
+            display: block;
+            font-size: 0.85rem;
+        }
+
+        .cart-item-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-remove {
+            background: transparent;
+            color: var(--danger);
+            border: none;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
+        .cart-totals {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.95rem;
+        }
+
+        .total-row.final {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--text);
+            border-top: 1px dashed var(--border);
+            padding-top: 8px;
+        }
+
+        /* Generic table layout for Inventory/Reports */
+        .table-container {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 0.9rem;
+        }
+
+        th, td {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            background: var(--background);
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .form-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            width: 350px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            height: fit-content;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Zillion POS</h1>
+        <div class="nav-tabs">
+            <button class="tab-btn active" onclick="switchTab('pos')">POS Register</button>
+            <button class="tab-btn" onclick="switchTab('inventory')">Inventory Hub</button>
+            <button class="tab-btn" onclick="switchTab('reports')">Sales & Reports</button>
+        </div>
+    </header>
+
+    <main>
+        <!-- POS VIEW -->
+        <section id="pos-view" class="view-section active">
+            <div class="pos-left">
+                <div class="search-box">
+                    <input type="text" id="barcodeInput" placeholder="Scan barcode, type SKU, or type 'next'..." autofocus>
+                    <button class="btn btn-secondary" onclick="triggerNextProduct()">⏭ Next Product</button>
+                </div>
+                <h3>Quick Tap Catalog</h3>
+                <div class="catalog-grid" id="catalogGrid"></div>
+            </div>
+
+            <div class="pos-right">
+                <h3>Current Cart</h3>
+                <div class="cart-items" id="cartContainer">
+                    <p style="color: var(--text-secondary); text-align: center; margin-top: 30px;">Cart is empty</p>
+                </div>
+
+                <div class="cart-totals">
+                    <div class="total-row">
+                        <span>Subtotal</span>
+                        <span id="subtotal">R0.00</span>
+                    </div>
+                    <div class="total-row final">
+                        <span>Total</span>
+                        <span id="finalTotal">R0.00</span>
+                    </div>
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <button class="btn btn-success" onclick="completeSale('Cash')">Pay Cash</button>
+                    <button class="btn btn-primary" onclick="completeSale('Card')">Pay Card</button>
+                    <button class="btn btn-secondary" onclick="clearCart()">Clear Cart</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- INVENTORY VIEW -->
+        <section id="inventory-view" class="view-section">
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>SKU</th>
+                            <th>Product Name</th>
+                            <th>Price</th>
+                            <th>Stock Qty</th>
+                        </tr>
+                    </thead>
+                    <tbody id="inventoryTableBody"></tbody>
+                </table>
+            </div>
+
+            <div class="form-card">
+                <h3>Add New Product</h3>
+                <input type="text" id="newSku" placeholder="SKU / Barcode">
+                <input type="text" id="newName" placeholder="Product Name">
+                <input type="number" id="newPrice" placeholder="Price (R)">
+                <input type="number" id="newStock" placeholder="Stock Quantity">
+                <button class="btn btn-primary" onclick="addNewProduct()">Save Product</button>
+            </div>
+        </section>
+
+        <!-- REPORTS VIEW -->
+        <section id="reports-view" class="view-section">
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Receipt ID</th>
+                            <th>Date / Time</th>
+                            <th>Payment Method</th>
+                            <th>Items Count</th>
+                            <th>Total Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reportsTableBody"></tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // Initial Mock Database
+        let inventory = [
+            { sku: '1001', name: 'Designer Dress', price: 850.00, stock: 12 },
+            { sku: '1002', name: 'Two-Piece Set', price: 650.00, stock: 8 },
+            { sku: '1003', name: 'Elegant Jumpsuit', price: 920.00, stock: 5 },
+            { sku: '1004', name: 'Chic Trousers', price: 450.00, stock: 15 },
+            { sku: '1005', name: 'Winter Coat', price: 1400.00, stock: 4 },
+            { sku: '1006', name: 'Leather Footwear', price: 790.00, stock: 10 }
+        ];
+
+        let cart = [];
+        let salesHistory = [];
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.view-section').forEach(sec => sec.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            
+            document.getElementById(tabId + '-view').classList.add('active');
+            event.target.classList.add('active');
+
+            if (tabId === 'inventory') renderInventory();
+            if (tabId === 'reports') renderReports();
+        }
+
+        function renderCatalog() {
+            const grid = document.getElementById('catalogGrid');
+            grid.innerHTML = inventory.map(item => `
+                <button class="catalog-item" onclick="addToCart('${item.sku}')">
+                    <h4>${item.name}</h4>
+                    <p>R ${item.price.toFixed(2)}</p>
+                </button>
+            `).join('');
+        }
+
+        function addToCart(skuOrQuery) {
+            const query = skuOrQuery.trim().toLowerCase();
+            const product = inventory.find(i => i.sku.toLowerCase() === query || i.name.toLowerCase().includes(query));
+            
+            if (!product) return;
+
+            const existing = cart.find(i => i.sku === product.sku);
+            if (existing) {
+                existing.qty++;
+            } else {
+                cart.push({ ...product, qty: 1 });
+            }
+            renderCart();
+        }
+
+        function removeFromCart(sku) {
+            cart = cart.filter(i => i.sku !== sku);
+            renderCart();
+        }
+
+        function clearCart() {
+            cart = [];
+            renderCart();
+        }
+
+        function renderCart() {
+            const container = document.getElementById('cartContainer');
+            if (cart.length === 0) {
+                container.innerHTML = '<p style="color: var(--text-secondary); text-align: center; margin-top: 30px;">Cart is empty</p>';
+            } else {
+                container.innerHTML = cart.map(i => `
+                    <div class="cart-item">
+                        <div class="cart-item-details">
+                            <span><b>${i.name}</b></span>
+                            <span>R ${i.price.toFixed(2)} x ${i.qty}</span>
+                        </div>
+                        <div class="cart-item-actions">
+                            <span>R ${(i.price * i.qty).toFixed(2)}</span>
+                            <button class="btn-remove" onclick="removeFromCart('${i.sku}')">Remove</button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            const subtotal = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
+            document.getElementById('subtotal').innerText = `R ${subtotal.toFixed(2)}`;
+            document.getElementById('finalTotal').innerText = `R ${subtotal.toFixed(2)}`;
+        }
+
+        function completeSale(method) {
+            if (cart.length === 0) return alert('Cart is empty');
+
+            const total = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
+            const sale = {
+                id: 'ZIL-' + Math.floor(100000 + Math.random() * 900000),
+                date: new Date().toLocaleString(),
+                method: method,
+                itemsCount: cart.reduce((sum, i) => sum + i.qty, 0),
+                total: total
+            };
+
+            salesHistory.unshift(sale);
+            alert(`Sale Completed via ${method}! Total: R ${total.toFixed(2)}`);
+            clearCart();
+        }
+
+        function renderInventory() {
+            const tbody = document.getElementById('inventoryTableBody');
+            tbody.innerHTML = inventory.map(i => `
+                <tr>
+                    <td>${i.sku}</td>
+                    <td>${i.name}</td>
+                    <td>R ${i.price.toFixed(2)}</td>
+                    <td>${i.stock}</td>
+                </tr>
+            `).join('');
+        }
+
+        function addNewProduct() {
+            const sku = document.getElementById('newSku').value;
+            const name = document.getElementById('newName').value;
+            const price = parseFloat(document.getElementById('newPrice').value);
+            const stock = parseInt(document.getElementById('newStock').value);
+
+            if (!sku || !name || isNaN(price) || isNaN(stock)) {
+                return alert('Please fill in all product fields correctly.');
+            }
+
+            inventory.push({ sku, name, price, stock });
+            renderInventory();
+            renderCatalog();
+
+            document.getElementById('newSku').value = '';
+            document.getElementById('newName').value = '';
+            document.getElementById('newPrice').value = '';
+            document.getElementById('newStock').value = '';
+            alert('Product added successfully!');
+        }
+
+        function renderReports() {
+            const tbody = document.getElementById('reportsTableBody');
+            if (salesHistory.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-secondary);">No sales recorded yet.</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = salesHistory.map(s => `
+                <tr>
+                    <td>${s.id}</td>
+                    <td>${s.date}</td>
+                    <td>${s.method}</td>
+                    <td>${s.itemsCount}</td>
+                    <td>R ${s.total.toFixed(2)}</td>
+                </tr>
+            `).join('');
+        }
+
+        function triggerNextProduct() {
+            if (inventory.length > 0) {
+                addToCart(inventory[0].sku);
+            }
+        }
+
+        // Barcode input listener
+        document.getElementById('barcodeInput').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                const val = this.value.trim();
+                if (val.toLowerCase() === 'next') {
+                    triggerNextProduct();
+                } else {
+                    addToCart(val);
+                }
+                this.value = '';
+            }
+        });
+
+        // Initialize catalog view
+        renderCatalog();
+    </script>
+</body>
+</html>
